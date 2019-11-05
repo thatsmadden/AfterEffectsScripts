@@ -1,4 +1,4 @@
-//sm_setIntervalMarkers v1.0
+// sm_setIntervalMarkers v1.0
 // Copyright (c) 2019 Steve Madden. All rights reserved.
 
 // Adds markers to the current composition spaced out the number of frames provided by the user, starting at the playhead.
