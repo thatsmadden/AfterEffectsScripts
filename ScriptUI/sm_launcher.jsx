@@ -1,4 +1,4 @@
-// sm_launcher v1.0
+// sm_launcher v1.3
 
 
 {
@@ -124,6 +124,54 @@
     }
   }
 
+  /////////////////////// sm_convexHull
+
+  function sm_convexHull(_p){
+    var preString = "\/\/ This is a messy way to calculate a minimum enclosing shape given a set of 2D points. Just replace the \"points[0]=.... ;\" section with your own selection of points.\r\n\r\n\/\/ The expression uses a Graham scan to find the points on the outer edge of the shape-- utilizing a cross product to find the point with the greatest \"left-turn\" for the next vertex on the hull.\r\n\r\n\/\/ It\'s meant to go on a path shape-- either a mask path or a Shape Layer path.\r\nfunction indexOfMin(arr) { \/\/ find index of point that has the lowest x-position.\r\n\tif (arr.length === 0) {\r\n\t\treturn -1;\r\n\t}\r\n\tvar curMin = arr[0][0];\r\n\tvar minIndex = 0;\r\n\r\n\tfor (var i = 1; i < arr.length; i++) {\r\n\t\tif (arr[i][0] < curMin) {\r\n\t\t\tminIndex = i;\r\n\t\t\tcurMin = arr[i][0];\r\n\t\t}\r\n\t}\r\n\treturn minIndex;\r\n}\r\n\r\n\/\/ create the necessary things\r\npoints = [];\r\nt = [];\r\nhull = [];\r\npInd = [];\r\nhullInd = 0;\r\n\n";
+
+    var postString = "\n\/\/ simple modulo to make sure our indices stay in-range of the length of the points array\r\n\r\nfunction cInd(_i) {\r\n\treturn _i % points.length;\r\n}\r\n\r\n\/\/ find left-most point\r\n\r\ni1 = indexOfMin(points);\r\n\r\n\r\n\/\/ add leftMost to hullArray\r\naddToHull(i1);\r\n\r\n\/\/ tentative winner\r\ncwInd = cInd(i1 + 1);\r\n\r\n\/\/ loop through every point to find the actual winner\r\nfor (var j = 1; j < points.length; j++) {\r\n\r\n\tcheckInd = cInd(pInd[hullInd - 1] + j); \/\/ the contender\r\n\r\n\tv1 = sub(hull[hullInd - 1], points[cwInd]); \/\/ vector from the last point on the hull to the tentative winner\r\n\tv2 = sub(hull[hullInd - 1], points[checkInd]); \/\/ vector from the last point on the hull to the contender\r\n\tif (cross(v1, v2)[2] < 0) { \/\/ if v2 is counter-clockwise to v1, v2 is the new winner\r\n\t\tcwInd = checkInd;\r\n\t}\r\n\r\n\t\/\/ when we reach the end of the loop, add the winner to the hull\r\n\r\n\tif (j == points.length - 1) {\r\n\t\treached = addToHull(cwInd);\r\n\t\tcwInd = cInd(cwInd + 1);\r\n\r\n\r\n\t\t\/\/ reset loop until the winning hull point is the left-most point again\r\n\t\tif (!reached) {\r\n\t\t\tj = 1;\r\n\t\t}\r\n\t}\r\n}\r\n\r\nfunction addToHull(_pInd) {\r\n\ttemp = hullInd;\r\n\tendReached = false;\r\n\r\n\tif (pInd[0] == null || pInd[0] !== _pInd) {\r\n\t\thull[hullInd] = points[_pInd]; \/\/ add winning point to hull\r\n\t\tpInd[hullInd] = _pInd; \/\/ store index of this point\'s index \r\n\t\tt[hullInd] = [0, 0]; \/\/ add point tangents\r\n\t\thullInd++;\r\n\t} else {\r\n\t\tendReached = true;\r\n\t}\r\n\treturn endReached;\r\n}\r\n\r\ncreatePath(hull, t, t, true);";
+
+    var comp = app.project.activeItem;
+
+    var pointsString = "";
+    var newShapeName = "";
+
+    if (!_p){
+      var l = comp.selectedLayers;
+      for (var i = 0; i < l.length; i++){
+        pointsString += "points[" + i.toString() + "] = fromCompToSurface(thisComp.layer(\"" + l[i].name + "\").toComp(thisComp.layer(\"" + l[i].name + "\").anchorPoint));\r\n";
+      }
+      newShapeName = l[0].name;
+    } else {
+      var props = app.project.activeItem.selectedProperties;
+      var pInd = 0;
+
+      for (var i = 0; i< props.length; i++){
+        if (props[i].matchName == "ADBE Vector Group"){
+          props[i].propertyGroup(props[i].propertyDepth).name;
+          pointsString += "points[" + pInd.toString() + "] = fromCompToSurface(thisComp.layer(\"" + props[i].propertyGroup(props[i].propertyDepth).name + "\").toComp(thisComp.layer(\"" + props[i].propertyGroup(props[i].propertyDepth).name + "\").content(\"" + props[i].name + "\").transform.position));\r\n";
+          pInd++;
+        }
+        newShapeName = props[0].propertyGroup(props[0].propertyDepth).name;
+      }
+    }
+
+
+
+
+    var newShape = comp.layers.addShape();
+    newShape.name = "convexHull_" + newShapeName;
+    shapeGroup = newShape.property("ADBE Root Vectors Group");
+    shapePathGroup = shapeGroup.addProperty("ADBE Vector Shape - Group"); // add a path
+    shapePath = shapePathGroup.property("ADBE Vector Shape");
+
+    shapePath.expression = preString + pointsString + postString;
+    shapePath.expressionEnabled = true;
+    shapeStroke = shapeGroup.addProperty("ADBE Vector Graphic - Stroke");
+  }
+
+
+
   /////////////////////// sm_destroyFolderStructure
   function sm_destroyFolderStructure(){
     var selectedThings = app.project.selection;
@@ -166,16 +214,26 @@
   }
 
   /////////////////////// sm_everyOtherLayer
-  function sm_everyOtherLayer(){
+  function sm_everyOtherLayer(_s){
     var comp = app.project.activeItem;
     var l = comp.selectedLayers;
-
+    var lSet = _s ? 0 : 1;
+    app.beginUndoGroup("sm_everyOtherLayer");
     for (var i = 0; i < l.length; i++){
-      if (i%2 == 0){
-        var curLayer = l[i];
+      var curLayer = l[i];
+      if (i%2 == lSet){
+        curLayer.selected = true;
+      } else {
         curLayer.selected = false;
       }
-
+    }
+    app.endUndoGroup();
+  }
+  /////////////////////// sm_expressionSwitch
+  function sm_expressionSwitch(_mode){
+    var p = app.project.activeItem.selectedProperties;
+    for (var i = 0; i < p.length; i++){
+      p[i].expressionEnabled = !_mode;
     }
   }
 
@@ -417,24 +475,49 @@
       }
   }
 
+
+  /////////////////////////// sm_parentChain
+  function sm_parentChain(){
+  	var s = app.project.activeItem.selectedLayers;
+  	var i;
+  	app.beginUndoGroup("sm_parentChain");
+  	for (i = 0; i < (s.length-1); ++i) {
+  		s[i + 1].parent = s[i];
+  	}
+  	app.endUndoGroup();
+
+  }
   /////////////////////////// sm_quickBake
-  function sm_quickBake(_r){
+  function sm_quickBake(_mode){
+    var _r = _mode == 2;
     var p = app.project.activeItem.selectedProperties;
+
     var i, pV;
     app.beginUndoGroup("sm_quickBake");
-      for (i=0; i<p.length; i++){
-        if (p[i] instanceof Property) {
-          if (!_r){
-            pV = p[i].value;
-            p[i].expression = "";
-            p[i].setValue(pV);
-          } else {
-            pV = p[i].value;
-            p[i].expressionEnabled = false;
-            p[i].setValue(pV);
-          }
+    if (_mode == 3){
+      var l = app.project.activeItem.selectedLayers;
+      for (var j = 0; j < l.length; j++){
+        p = l[j].property("Transform").property("Position");
+        pV = p.value;
+        p.expressionEnabled = false;
+        p.setValue(pV);
+      }
+
+    }
+    for (i=0; i<p.length; i++){
+
+      if (p[i] instanceof Property) {
+        if (!_r){
+          pV = p[i].value;
+          p[i].expression = "";
+          p[i].setValue(pV);
+        } else {
+          pV = p[i].value;
+          p[i].expressionEnabled = false;
+          p[i].setValue(pV);
         }
       }
+    }
     app.endUndoGroup();
   }
 
@@ -815,13 +898,12 @@
 				var prop = e.property(1);
 
 				prop.expression = "function edge(p){\n" +
+          "var past = false;\n" +
 					"for (i=0; i<" + scope +";){\n" +
 					"q=[" + size[0] + "," + size[1] + "]+p*(" + scope +"-i);\n" +
 					"s=thisLayer.sampleImage(q,[.5,.5])[3];\n" +
-					"if (s<=.1){i=i+4;} else {break;}\n" +
-					"}\n" +
-					"return q;\n" +
-					"}\n" +
+          "if (s<=.05){if (past == true){break;}i+=25;} else {past = true;i -=3;}}\n" +
+          "return q;}\n" +
 					"n=thisProperty.propertyGroup(1).propertyIndex;\n" +
 					"a=(2*Math.PI/" + points + ")*n;\n" +
 					"p=[Math.sin(a),-Math.cos(a)];\n" +
@@ -856,16 +938,45 @@
 	}
 
 }
+{ /////////////////////// sm_versionUp
+  function sm_versionUp(_shift){
+
+    var filepath = decodeURI(app.project.file);
+    var filename = decodeURI(app.project.file.name);
+    var verRX = /_[a-z][0-9][0-9]/g;
+
+    var ver = verRX.exec(filename); // "_a01" formatted version string from filename
+
+    if (_shift){
+      var newfilename = filename.replace(ver[ver.length-1], versionUpLetter(ver[ver.length-1]));
+    } else {
+      var newfilename = filename.replace(ver[ver.length-1], versionUpNumber(ver[ver.length-1]));
+    }
+
+    var saveFile = File(encodeURI(filepath.replace(filename, newfilename)));
+    app.project.save(saveFile);
+
+    function versionUpNumber(_str){
+      return _str.substring(0,2) + (parseInt(_str.substring(2)) + 101).toString().substring(1);
+    }
+
+    function versionUpLetter(_str){
+      var l = _str.substring(1,2);
+      var allL = "abcdefghijklmnopqrstuvwxyza";
+      return "_" + allL.substring(allL.indexOf(l)+1, allL.indexOf(l)+2) + "01";
+    }
+  }
+}
 {
 
   function myScript(thisObj) {
       function myScript_buildUI(thisObj) {
-        var myPanel = (thisObj instanceof Panel) ? thisObj : new Window("palette", "sm_launcher", [0, 0, 50, 25]);
+        var myPanel = (thisObj instanceof Panel) ? thisObj : new Window("palette", "sm_launcher");
 
-        res = "group{orientation:'row', alignment:['fill', 'fill'], alignChildren:['fill', 'fill'], spacing:2,\
-          dropper: DropDownList{properties:{items:['calculatedNull', 'circlePath', 'connector', 'destroyFolderStructure','everyOtherLayer','face', 'fastShape', 'isolateProperties','lookAt', 'nullInPlace','quickBake', 'replaceWithSolid','restoreOrder','revealShapeColor - Fill','revealShapeColor - Stroke','selectImmediateChildren','selectUnparented','strayFileFinder','toComp', 'unevenWheel']}, preferredSize:[200,25]},\
-          doButton: Button{text:'*', size:[20,20]},\
-          qButton: Button{text:'?', size:[20,20]},\
+        res = "group{orientation:'row',alignment:['fill', 'center'],alignChildren:['fill', 'center'], spacing:2,\
+          dropper: DropDownList{properties:{items:['calculatedNull', 'circlePath', 'connector', 'convexHull', 'destroyFolderStructure','expressionSwitch','everyOtherLayer','face', 'fastShape', 'isolateProperties','lookAt', 'nullInPlace', 'parentChain','quickBake', 'replaceWithSolid','restoreOrder','revealShapeColor - Fill','revealShapeColor - Stroke','selectImmediateChildren','selectUnparented','strayFileFinder','toComp', 'unevenWheel', 'versionUp']}, preferredSize:[200,25]},\
+          doButton: Button{text:'*',alignment:['right', 'center'],maximumSize:[25,25]},\
+          qButton: Button{text:'?',alignment:['right', 'center'],maximumSize:[25,25]},\
           }\
         }"
 
@@ -889,12 +1000,20 @@
             sm_connector();
             break;
 
+            case "convexHull":
+            sm_convexHull(ScriptUI.environment.keyboardState.shiftKey);
+            break;
+
             case "destroyFolderStructure":
             sm_destroyFolderStructure();
             break;
 
             case "everyOtherLayer":
-            sm_everyOtherLayer();
+            sm_everyOtherLayer(ScriptUI.environment.keyboardState.shiftKey);
+            break;
+
+            case "expressionSwitch":
+            sm_expressionSwitch(ScriptUI.environment.keyboardState.shiftKey);
             break;
 
             case "face":
@@ -919,6 +1038,10 @@
             sm_nullInPlace();
             break;
 
+            case "parentChain":
+            sm_parentChain();
+            break;
+
             case "replaceWithSolid":
             sm_replaceWithSolid();
             break;
@@ -936,7 +1059,9 @@
             break;
 
             case "quickBake":
-            sm_quickBake(ScriptUI.environment.keyboardState.altKey);
+            var shiftPressed = ScriptUI.environment.keyboardState.shiftKey ? 1 : 0;
+            var altPressed = ScriptUI.environment.keyboardState.altKey ? 2 : 0;
+            sm_quickBake(shiftPressed + altPressed);
             break;
 
             case "selectImmediateChildren":
@@ -967,6 +1092,10 @@
             sm_unevenWheel();
             break;
 
+            case "versionUp":
+            sm_versionUp(ScriptUI.environment.keyboardState.shiftKey);
+            break;
+
             default:
             alert("Make sure you select something from the dropdown.")
           }
@@ -988,6 +1117,10 @@
             case "connector":
             alert("Creates a shape layer with a stroked path that spans two selected nulls using expressions on the position, scale, and rotation within the shape layer's transform group.\n" +
             "Choose two nulls with different names, and run the script.");
+            break;
+
+            case "convexHull":
+            alert("Given a layer selection, this script creates a Shape Layer with a path expression that calculates the minimum enclosing shape of the layers via their anchor points.\n\nOr, hold shift to use the positions of a Shape Layer Group selection.");
             break;
 
             case "destroyFolderStructure":
@@ -1017,6 +1150,10 @@
 
             case "nullInPlace":
             alert("Creates a parent null with the same position and rotation values at the current time for each selected layer. Choose one or more layers and run the script.");
+            break;
+
+            case "parentChain":
+            alert("Given a selection of layers, this script will parent each layer to the previously selected layer.");
             break;
 
             case "replaceWithSolid":
@@ -1067,6 +1204,10 @@
 
             case "unevenWheel":
             alert("If you want to roll an object that's not perfectly round, this script will find the edges of your shape and apply an expression to affect the position based on the various contours of your wheel as you animate the rotation.\n\nThe script will also create a null object called \"groundNull\" which acts as the floor. If you have a null already called groundNull, it will not create one.... but instead use the existing groundNull.\n\nProvide a number when prompted (up to 26), and the script will make that many evenly-spaced instances of the Point Control effect around the outer edge of your wheel. They need to be on there as they tell the position expression where the contours are. You can drag any of those points manually once the script finishes to refine the shape (if the script missed a protruding corner, for instance).\n\nThe contour is generated by sampling the alpha channel, so your wheel needs to either be a png, tif, or ai (not-continuously rasterized) with alpha or a stagnant shape in a comp. Masked solids or shape layers need to be precomped, I think.\n\nSelect your wheel and run the script. It'll take a bit of time to process, so be patient.");
+            break;
+
+            case "versionUp":
+            alert("Run this script to save the next version of your project file that utilizes an underscore-delimited naming scheme and alpha-numeric versioning (ex. \"a05\").\n\nHold shift while running to version up the letter.");
             break;
 
             default:
