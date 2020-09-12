@@ -1,4 +1,5 @@
-
+// creates an expression on the "Position" property of a Shape Layer Rectangle or Ellipse so the shape grows from the selected anchor.
+{
 function sm_moveShapeAnchor(col, row){
   var xStr = "";
   var yStr = "";
@@ -164,4 +165,5 @@ function sm_moveShapeAnchor(col, row){
 
    // Execute script
    myWindow(this);
+}
 }
