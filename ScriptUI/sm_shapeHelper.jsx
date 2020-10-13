@@ -1,6 +1,4 @@
-// sm_shapeHelper v0.2
-
-
+// sm_shapeHelper v0.3
 
 {
   function sm_shapeHelper(_m){
@@ -78,10 +76,10 @@
       function myScript_buildUI(thisObj) {
         var myPanel = (thisObj instanceof Panel) ? thisObj : new Window("palette", "sm_shapeHelper", [0, 0, 50, 25]);
 
-        res = "group{orientation:'row', alignment:['fill', 'fill'], alignChildren:['fill', 'fill'], spacing:2,\
+        res = "group{orientation:'row',alignment:['fill', 'center'],alignChildren:['fill', 'center'], spacing:2,\
           dropper: DropDownList{properties:{items:['Scale','Position','Anchor Point','Opacity', 'Selected']}, preferredSize:[200,25]},\
-          doButton: Button{text:'*', size:[20,20]},\
-          qButton: Button{text:'?', size:[20,20]},\
+          doButton: Button{text:'*',alignment:['right', 'center'], maximumSize:[25,25]},\
+          qButton: Button{text:'?',alignment:['right', 'center'], maximumSize:[25,25]},\
           }\
         }"
 
