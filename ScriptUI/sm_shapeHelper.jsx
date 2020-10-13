@@ -1,4 +1,4 @@
-// sm_shapeHelper v0.3
+// sm_shapeHelper v0.4
 
 {
   function sm_shapeHelper(_m){
@@ -77,7 +77,7 @@
         var myPanel = (thisObj instanceof Panel) ? thisObj : new Window("palette", "sm_shapeHelper", [0, 0, 50, 25]);
 
         res = "group{orientation:'row',alignment:['fill', 'center'],alignChildren:['fill', 'center'], spacing:2,\
-          dropper: DropDownList{properties:{items:['Scale','Position','Anchor Point','Opacity', 'Selected']}, preferredSize:[200,25]},\
+          dropper: DropDownList{properties:{items:['Scale','Position','Anchor Point','Opacity', 'Rotation', 'Selected']}, preferredSize:[200,25]},\
           doButton: Button{text:'*',alignment:['right', 'center'], maximumSize:[25,25]},\
           qButton: Button{text:'?',alignment:['right', 'center'], maximumSize:[25,25]},\
           }\
