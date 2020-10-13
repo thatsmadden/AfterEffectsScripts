@@ -1,5 +1,14 @@
-//sm_renamer 2.1
+//sm_renamer 4.0
 {
+  function selShapesToArray(_sel){
+    var arr = new Array();
+    for (var s = 0; s< _sel.length; s++){
+      if (_sel[s].matchName == "ADBE Vector Group"){
+        arr.push(_sel[s]);
+      }
+    }
+    return arr;
+  }
 
   function rqUtil(mode, _pre, _suf, _beg, _end){
   	// define variables
@@ -170,77 +179,70 @@
                   var myPanel = (thisObj instanceof Panel) ? thisObj : new Window("palette", "sm_rename", [0, 0, 300, 300]);
 
                   res = "group{orientation:'column', alignment:['fill', 'fill'], alignChildren:['fill', 'fill'],\
-                          myTabbedPanel: Panel{type:'tabbedpanel', orientation:'left', alignChildren:['fill', 'fill'],\
-                            rsTab: Panel{type:'tab', text:'RENAME + SEQ', orientation:'row', alignChildren:['fill', 'fill'],\
-                              rsMain: Group{orientation:'column', alignment:['fill', 'fill'], alignChildren:['fill', 'fill'],\
-                                rsNameGroup: Group{orientation:'column', alignment:['fill', 'fill'], alignChildren:['left', 'fill'], spacing:0,\
-                                  basenameLabel: StaticText{text:'Base name:'},\
-                                  basenameText: EditText{text:'TEXT_', alignment:['fill','fill']},\
+                          myTabbedPanel: Panel{type:'tabbedpanel', alignChildren:['fill', 'top'],margins:[5,0,0,0],\
+                            rsTab: Panel{type:'tab', text:'RENAME + SEQ', orientation:'row', alignChildren:['fill', 'center'],\
+                              rsMain: Group{orientation:'column', alignChildren:['fill', 'center'],spacing:5,\
+                                rsNameGroup: Group{orientation:'column', spacing:0,\
+                                  basenameLabel: StaticText{text:'Base name:',alignment:['left', 'center']},\
+                                  basenameText: EditText{text:'TEXT_', alignment:['fill','top']},\
                                 },\
-                                rsSeqGroup: Group{orientation:'row', alignment:['fill', 'fill'], alignChildren:['fill', 'fill'],\
-                                  padGroup: Group{orientation:'column', alignment:['fill', 'fill'], spacing:0,\
-                                    padLabel: StaticText{text:'Padding:', alignment:['left','fill']},\
-                                    padText: EditText{text:'4', alignment:['fill','fill'], justify:'center'},\
+                                rsSeqGroup: Group{orientation:'row',spacing:2,alignment:['fill', 'center'],alignChildren:['fill','center'],\
+                                  padGroup: Group{orientation:'column', alignChildren:['fill','center'], spacing:0,\
+                                    padLabel: StaticText{text:'Padding:', minimumSize:[20,10]},\
+                                    padText: EditText{text:'4', justify:'center', minimumSize:[20,10]},\
                                   },\
-                                  startGroup: Group{orientation:'column', alignment:['fill', 'fill'], spacing:0,\
-                                    startLabel: StaticText{text:'Start at:', alignment:['left','fill']},\
-                                    startText: EditText{text:'0', alignment:['fill','fill'], justify:'center'},\
+                                  startGroup: Group{orientation:'column', alignChildren:['fill','center'], spacing:0,\
+                                    startLabel: StaticText{text:'Start at:', minimumSize:[20,10]},\
+                                    startText: EditText{text:'0', justify:'center', minimumSize:[20,10]},\
                                   },\
-                                  stepGroup: Group{orientation:'column', alignment:['fill', 'fill'], spacing:2,\
-                                    stepLabel: StaticText{text:'Increment:',alignment:['left','fill']},\
-                                    stepText: EditText{text:'1', alignment:['fill','fill'], justify:'center'},\
+                                  stepGroup: Group{orientation:'column', alignChildren:['fill','center'], spacing:0,\
+                                    stepLabel: StaticText{text:'Step:', minimumSize:[20,10]},\
+                                    stepText: EditText{text:'1', justify:'center'},\
                                   },\
                                 },\
                               },\
-                              rsAppendPanel: Panel{text:'Append as:', orientation:'column', alignment:['right', 'fill'], alignChildren:['right', 'center'],\
-                                rsAppendCheck: Group{orientation:'row', alignment:['fill', 'center'], alignChildren:['left', 'center'],\
-                                  rsPrefix: Checkbox{text:'prefix'},\
-                                  rsSuffix: Checkbox{text:'suffix'},\
+                              rsAppendPanel: Panel{text:'Append as:', orientation:'column',alignment:['right', 'center'],size:[85,200],spacing:0,margins:2,\
+                                space: StaticText{text:'', size:[10,11]},\
+                                rsAppendCheck: Group{orientation:'row', alignment:['left', 'center'], alignChildren:['left', 'center'], spacing:5,margins:0,\
+                                  rsPrefix: Checkbox{text:'pre'},\
+                                  rsSuffix: Checkbox{text:'suf'},\
                                 },\
                                 delimitGroup: Group{orientation:'column', alignment:['fill', 'fill'], alignChildren:['left', 'fill'], spacing:0,\
-                                  delimitLabel: StaticText{text:'Delimiter: '},\
+                                  delimitLabel: StaticText{text:'Delimiter:'},\
                                   delimitText: EditText{text:'_', alignment:['fill','fill'], justify:'center'},\
                                 },\
                               },\
                             },\
-                            aTab: Panel{type:'tab', text:'APPEND', orientation:'column', alignChildren:['fill', 'center'],\
-                              appendPanel: Panel{orientation:'column', alignChildren:['fill', 'fill'],\
-                                appendTextGroup: Group{orientation:'row', alignment:['fill', 'fill'], alignChildren:['left', 'fill'],\
-                                  appendLabel: StaticText{text:'Text to append: '},\
-                                  appendText: EditText{text:'SHOT', alignment:['fill','fill']},\
-                                },\
-                                appendSwitch: Group{orientation:'row', alignment:['center', 'fill'], alignChildren:['left', 'fill'],\
-                                  prefixButton: RadioButton{text:'Prefix'},\
-                                  suffixButton: RadioButton{text:'Suffix'},\
-                                },\
+                            aTab: Panel{type:'tab', text:'APPEND', orientation:'row',\
+                              appendText: EditText{text:'SHOT', justify:'center',alignment:['fill','center'], minimumSize:[60,35]},\
+                              appendSwitch: Group{orientation:'column',alignment:['right','center'], alignChildren:['left', 'center'],spacing:0,\
+                                prefixButton: RadioButton{text:'Prefix'},\
+                                suffixButton: RadioButton{text:'Suffix'},\
                               },\
                             },\
-                            tTab: Panel{type:'tab', text:'TRIM', orientation:'row', alignChildren:['left', 'center'],\
-                              trimText: EditText{text:'4', alignment:['fill','fill'], justify:'center'},\
-                              tSwitch: Group{orientation:'column', alignment:['fill', 'fill'], alignChildren:['left', 'center'], spacing: 5px,\
+                            tTab: Panel{type:'tab', text:'TRIM', orientation:'row', alignChildren:['center', 'center'],\
+                              trimText: EditText{text:'4', justify:'center', size:[60,80]},\
+                              tSwitch: Group{orientation:'column', alignChildren:['left', 'center'], spacing: 5px,\
                                 kFirstButton: RadioButton{text:'Keep only first _'},\
                                 kLastButton: RadioButton{text:'Keep only last _'},\
                                 trimStartButton: RadioButton{text:'_ off the beginning'},\
                                 trimEndButton: RadioButton{text:'_ off the end'},\
                               },\
                             },\
-                            frTab: Panel{type:'tab', text:'FIND & REPLACE', orientation:'column', alignChildren:['center', 'center'],\
-                              findLabel: StaticText{text:'Find:', alignment:['fill', 'fill']},\
-                              findText: EditText{text: 'findText', alignment:['fill', 'fill']},\
-                              replaceLabel: StaticText{text:'Replace:', alignment:['fill', 'fill']},\
-                              replaceText: EditText{text: 'replaceText', alignment:['fill', 'fill']},\
+                            frTab: Panel{type:'tab', text:'FIND & REPLACE', orientation:'column', alignChildren:['fill', 'center'], spacing:0,\
+                              findLabel: StaticText{text:'Find:'},\
+                              findText: EditText{text: 'findText'},\
+                              space: StaticText{text:'', size:[10,5]},\
+                              replaceLabel: StaticText{text:'Replace:'},\
+                              replaceText: EditText{text: 'replaceText'},\
                             },\
                             rTab: Panel{type:'tab', text:'RESET', orientation:'column', alignChildren:['center', 'center'],\
                               rGroup: Panel{orientation:'row', alignment:['fill', 'fill'], alignChildren:['center', 'center'],\
                               },\
                             },\
                           },\
-                      executeGroup: Group{orientation:'row', alignChildren:['left', 'fill'],\
-                        selectorGroup: Group{orientation:'column', alignChildren:['left', 'center'], spacing: 5px,\
-                          compButton: RadioButton{text:'Comps'},\
-                          layerButton: RadioButton{text:'Layers'},\
-                          rqButton: RadioButton{text:'Render Queue'},\
-                        },\
+                      executeGroup: Group{orientation:'row',alignment:['fill','bottom'], alignChildren:['left', 'fill'],\
+                        dropper: DropDownList{properties:{items:['Layers', 'Compositions', 'Shape Groups', 'Render Queue']}},\
                         renameItButton: Button{text:'RENAME IT!', alignment:['fill', 'fill']},\
                     },\
                   }"
@@ -248,39 +250,60 @@
                   // Adds resource string to panel
                   myPanel.grp = myPanel.add(res);
 
+                  myPanel.grp.executeGroup.dropper.selection = 0;
+
 
 
                   myPanel.grp.executeGroup.renameItButton.onClick = function(){
-                    var compSelected = myPanel.grp.executeGroup.selectorGroup.compButton.value;
-                    var layerSelected = myPanel.grp.executeGroup.selectorGroup.layerButton.value;
-                    var rqSelected = myPanel.grp.executeGroup.selectorGroup.rqButton.value;
+                    var compSelected = false;
+                    var layerSelected = false;
+                    var shapeSelected = false;
+                    var rqSelected = false;
+
                     var selThings = null;
                     var i, j, k, l = 0;
 
-                    // check the comp or layer buttons and assign variables accordingly
-                    if (compSelected) {
-                      selThings = app.project.selection;
-                      if (selThings.length == 0) {
-                        alert("Select some comps and try again.");
+                    switch (myPanel.grp.executeGroup.dropper.selection.text){
+                      case "Layers":
+                        selThings = app.project.activeItem.selectedLayers;
+                        layerSelected = true;
+                        if (selThings.length == 0) {
+                          alert("Select some layers and try again.");
+                          return;
+                        }
+                        break;
+                      case "Compositions":
+                        selThings = app.project.selection;
+                        compSelected = true;
+                        if (selThings.length == 0) {
+                          alert("Select some comps and try again.");
+                          return;
+                        }
+                        break;
+                      case "Shape Groups":
+                        selThings = selShapesToArray(app.project.activeItem.selectedProperties);
+                        shapeSelected = true;
+                        if (selThings.length == 0) {
+                          alert("Select some Shape Groups and try again.");
+                          return;
+                        }
+                        break;
+                      case "Render Queue":
+                        selThings = app.project.renderQueue;
+                        rqSelected = true;
+                        if (selThings.numItems == 0) {
+                          alert("Nothing queued. Try again");
+                          return;
+                        }
+                        break;
+                      default:
+                        alert("Choose an option to the left of the RENAME IT! button, and try again.");
                         return;
-                      }
+                        break;
 
-                    } else if (layerSelected) {
-                      selThings = app.project.activeItem.selectedLayers;
-                      if (selThings.length == 0) {
-                        alert("Select some layers and try again.");
-                        return;
-                      }
-                    } else if (rqSelected) {
-                      selThings = app.project.renderQueue;
-                      if (selThings.numItems == 0) {
-                        alert("Nothing queued. Try again");
-                        return;
-                      }
-                    } else {
-                      alert("Choose an option to the left of the RENAME IT! button, and try again.");
-                      return;
+
                     }
+
 
                     // check for active tab in panel
                     var selectedPanel = myPanel.grp.myTabbedPanel.selection;
@@ -334,7 +357,7 @@
   // case APPEND
                       case 'APPEND':
                         // user input
-                        var aPanel = myPanel.grp.myTabbedPanel.aTab.appendPanel;
+                        var aPanel = myPanel.grp.myTabbedPanel.aTab;
                         var aPrefixSw = aPanel.appendSwitch.prefixButton.value;
                         var aSuffixSw = aPanel.appendSwitch.suffixButton.value;
 
@@ -345,8 +368,8 @@
                         }
 
                         //check for switches and set up prefix and suffix accordingly
-                        var aPrefix = aPrefixSw ? aPanel.appendTextGroup.appendText.text : "";
-                        var aSuffix = aSuffixSw ? aPanel.appendTextGroup.appendText.text : "";
+                        var aPrefix = aPrefixSw ? aPanel.appendText.text : "";
+                        var aSuffix = aSuffixSw ? aPanel.appendText.text : "";
 
                         if (selThings instanceof RenderQueue){
                           rqUtil(0, aPrefix, aSuffix, 0, 0);
@@ -477,6 +500,14 @@
                                 doTheRename(selThings[k],"ResetShapeLayer_" + k.toString());
                               }
 
+                            }
+                            app.endUndoGroup();
+                          }
+
+                          if (shapeSelected){
+                            app.beginUndoGroup("sm_renameResetShapes");
+                            for (k = 0; k < selThings.length; k++){
+                              doTheRename(selThings[k],"Group " + (k+1).toString());
                             }
                             app.endUndoGroup();
                           }
