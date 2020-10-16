@@ -1,4 +1,4 @@
-// sm_launcher v1.3
+// sm_launcher v1.4
 
 
 {
@@ -537,6 +537,59 @@
     app.endUndoGroup();
   }
 
+  /////////////////////////// sm_quickShapeCombine
+  function sm_quickShapeCombine(){
+    var sL = app.project.activeItem.selectedLayers;
+    app.beginUndoGroup("sm_quickShapeCombine");
+    $.sleep(250);
+    app.executeCommand(2004); // deselect
+    for (var i = 1; i<sL.length; i++){
+      if (sL[i].property("ADBE Root Vectors Group").property("ADBE Vector Group") !== null && sL[0].property("ADBE Root Vectors Group") !== null){
+        for (var j = 1; j<=sL[i].property("ADBE Root Vectors Group").numProperties; j++){
+          sL[i].property("ADBE Root Vectors Group").property(j).selected = true;
+          app.executeCommand(19); // copy
+
+          sL[0].property("ADBE Root Vectors Group").selected = true;
+          app.executeCommand(20); // paste
+          app.executeCommand(2004); // deselect
+        }
+
+      }
+
+    }
+    for (var i = 1; i < sL.length; i++){
+      sL[i].remove();
+    }
+    app.endUndoGroup();
+  }
+
+  function sm_quickShapeBreakOut(){
+    app.beginUndoGroup("sm_quickShapeBreakOut");
+    var comp = app.project.activeItem;
+    var l = comp.selectedLayers;
+    for (var i = 0; i < l.length; i++){
+      var pathCount = 0;
+      var curLayer = l[i];
+      var shapeGroup = curLayer.property("ADBE Root Vectors Group");
+      for (var j = 1; j <= shapeGroup.numProperties; j++){
+        var curProp = curLayer.property("ADBE Root Vectors Group").property(j);
+        if (curProp.matchName == "ADBE Vector Group"){
+          var newCurLayer = curLayer.duplicate();
+          newCurLayer.name = curLayer.name + "_" + j;
+          var newShapeGroup = newCurLayer.property("ADBE Root Vectors Group");
+          for (k = newShapeGroup.numProperties; k >= 1; k--){
+            if (newShapeGroup.property(k).matchName == "ADBE Vector Group" && k != j){
+              newShapeGroup.property(k).remove();
+            }
+          }
+        }
+      }
+
+
+    }
+    app.endUndoGroup();
+  }
+
   /////////////////////////// sm_replaceWithSolid
   function sm_replaceWithSolid(){
     var comp = app.project.activeItem;
@@ -662,17 +715,40 @@
   }
 
   /////////////////////////// sm_selectUnparented
-  function sm_selectUnparented(_shift){
+  function sm_selectUnparented(_mode){
     var l = app.project.activeItem.layers;
+    switch (_mode){
+      case 0:
+        for (var i = 1; i <= l.length; i++){
+          var curLayer = l[i];
+          if (curLayer.parent == null){
+            if (!curLayer.locked){curLayer.selected = true;}
+          } else {
+            curLayer.selected = false;
+          }
+        }
+      break;
+      case 1:
+        for (var i = 1; i <= l.length; i++){
+          var curLayer = l[i];
+          if (curLayer.parent == null){
+            if (!curLayer.locked){curLayer.selected = true;}
+          }
+        }
+        break;
+      case 2:
+        for (var i = 1; i <= l.length; i++){
+          var curLayer = l[i];
+          if (curLayer.parent !== null){
+            if (!curLayer.locked){curLayer.selected = false;}
+          }
+        }
+        break;
+      case 3:
+      break;
 
-    for (var i = 1; i <= l.length; i++){
-      var curLayer = l[i];
-      if (curLayer.parent == null){
-        if (!curLayer.locked){curLayer.selected = true;}
-      } else {
-        if (!_shift){curLayer.selected = false;}
-      }
     }
+
   }
 }
 {
@@ -898,12 +974,13 @@
 				var prop = e.property(1);
 
 				prop.expression = "function edge(p){\n" +
-          "var past = false;\n" +
 					"for (i=0; i<" + scope +";){\n" +
 					"q=[" + size[0] + "," + size[1] + "]+p*(" + scope +"-i);\n" +
 					"s=thisLayer.sampleImage(q,[.5,.5])[3];\n" +
-          "if (s<=.05){if (past == true){break;}i+=25;} else {past = true;i -=3;}}\n" +
-          "return q;}\n" +
+					"if (s<=.1){i=i+4;} else {break;}\n" +
+					"}\n" +
+					"return q;\n" +
+					"}\n" +
 					"n=thisProperty.propertyGroup(1).propertyIndex;\n" +
 					"a=(2*Math.PI/" + points + ")*n;\n" +
 					"p=[Math.sin(a),-Math.cos(a)];\n" +
@@ -974,7 +1051,7 @@
         var myPanel = (thisObj instanceof Panel) ? thisObj : new Window("palette", "sm_launcher");
 
         res = "group{orientation:'row',alignment:['fill', 'center'],alignChildren:['fill', 'center'], spacing:2,\
-          dropper: DropDownList{properties:{items:['calculatedNull', 'circlePath', 'connector', 'convexHull', 'destroyFolderStructure','expressionSwitch','everyOtherLayer','face', 'fastShape', 'isolateProperties','lookAt', 'nullInPlace', 'parentChain','quickBake', 'replaceWithSolid','restoreOrder','revealShapeColor - Fill','revealShapeColor - Stroke','selectImmediateChildren','selectUnparented','strayFileFinder','toComp', 'unevenWheel', 'versionUp']}, preferredSize:[200,25]},\
+          dropper: DropDownList{properties:{items:['calculatedNull', 'circlePath', 'connector', 'convexHull', 'destroyFolderStructure','expressionSwitch','everyOtherLayer','face', 'fastShape', 'isolateProperties','lookAt', 'nullInPlace', 'parentChain','quickBake', 'quickShapeCombine', 'replaceWithSolid','restoreOrder','revealShapeColor - Fill','revealShapeColor - Stroke','selectImmediateChildren','selectUnparented','strayFileFinder','toComp', 'unevenWheel', 'versionUp']}, preferredSize:[200,25]},\
           doButton: Button{text:'*',alignment:['right', 'center'],maximumSize:[25,25]},\
           qButton: Button{text:'?',alignment:['right', 'center'],maximumSize:[25,25]},\
           }\
@@ -1042,6 +1119,21 @@
             sm_parentChain();
             break;
 
+            case "quickBake":
+            var shiftPressed = ScriptUI.environment.keyboardState.shiftKey ? 1 : 0;
+            var altPressed = ScriptUI.environment.keyboardState.altKey ? 2 : 0;
+            sm_quickBake(shiftPressed + altPressed);
+            break;
+
+            case "quickShapeCombine":
+            if (ScriptUI.environment.keyboardState.shiftKey){
+              sm_quickShapeBreakOut();
+            } else {
+              sm_quickShapeCombine();
+            }
+
+            break;
+
             case "replaceWithSolid":
             sm_replaceWithSolid();
             break;
@@ -1058,18 +1150,14 @@
             sm_revealShapeColor("Stroke");
             break;
 
-            case "quickBake":
-            var shiftPressed = ScriptUI.environment.keyboardState.shiftKey ? 1 : 0;
-            var altPressed = ScriptUI.environment.keyboardState.altKey ? 2 : 0;
-            sm_quickBake(shiftPressed + altPressed);
-            break;
-
             case "selectImmediateChildren":
             sm_selectImmediateChildren();
             break;
 
             case "selectUnparented":
-            sm_selectUnparented(ScriptUI.environment.keyboardState.shiftKey);
+            var shiftPressed = ScriptUI.environment.keyboardState.shiftKey ? 1 : 0;
+            var altPressed = ScriptUI.environment.keyboardState.altKey ? 2 : 0;
+            sm_selectUnparented(shiftPressed + altPressed);
             break;
 
             case "strayFileFinder":
@@ -1176,6 +1264,10 @@
 
             case "quickBake":
             alert("Use this to bake an expression that gives you a constant value. Doesn't create keyframes like Keyframe Assistant > Convert Expression to Keyframes. Instead, it sets the value of the property to the expression-calculated value at the playhead, and then clears the expression. Or hold alt/option to simply disable the expression without clearing it.");
+            break;
+
+            case "quickShapeCombine":
+            alert("Given a selection of Shape layers, this script combines the top level Shape Groups into the first-selected layer. Hold shift to break top-level Shape Groups into their own layers.");
             break;
 
             case "selectImmediateChildren":
