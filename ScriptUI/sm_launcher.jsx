@@ -1,4 +1,4 @@
-// sm_launcher v1.4
+// sm_launcher v1.5
 
 
 {
@@ -176,41 +176,62 @@
   function sm_destroyFolderStructure(){
     var selectedThings = app.project.selection;
 
-
-
-    function emptyContents(curItem){
-      var j, curFolder;
-      if (curItem instanceof FolderItem){
-      for (j=curItem.items.length; j>=1;j--){
-          curFolder = curItem.item(j);
-          emptyContents(curFolder);}
-        } else {
-          moveToTopFolder(tempFolder, curItem);
-        }
-      }
-
-
-    if ((selectedThings.length) = 1 && (selectedThings[0] instanceof FolderItem)){
+    if (selectedThings.length == 1 && selectedThings[0] instanceof FolderItem){
       app.beginUndoGroup("sm_destroyFolderStructure");
-        var topFolder = selectedThings[0];
-        var containingFolder = topFolder.parentFolder;
-        var tempFolder = app.project.items.addFolder("sm_destroyFolderTarget");
-        tempFolder.parentFolder = containingFolder;
-        emptyContents(topFolder);
 
-      } else {
-        alert("Select a folder and try again");
-      }
-    //
-    function moveToTopFolder(tF, cI){
-      cI.parentFolder = tF;
+      var topFolder = selectedThings[0];
+      var containingFolder = topFolder.parentFolder;
+      var tempFolder = app.project.items.addFolder("sm_destroyFolderTarget");
+      tempFolder.parentFolder = containingFolder;
+      var sFolder = dfs_findSolidsFolder();
+      dfs_emptyContents(topFolder);
+    } else {
+      alert("Select a folder and try again");
     }
 
     var nameHolder = topFolder.name;
-
     topFolder.remove();
     tempFolder.name = nameHolder;
+
     app.endUndoGroup();
+
+    function dfs_emptyContents(_curItem){
+      if (_curItem instanceof FolderItem){
+        if (_curItem == sFolder){
+          _curItem.parentFolder = app.project.rootFolder;
+        } else {
+          for (var j=_curItem.items.length; j>=1;j--){
+            dfs_emptyContents(_curItem.item(j), _sFolder);
+          }
+        }
+
+      } else if ((_curItem instanceof FootageItem) && (_curItem.mainSource instanceof SolidSource)){
+        _curItem.parentFolder = sFolder;
+      }else {
+        _curItem.parentFolder = tempFolder;
+      }
+    }
+
+    function dfs_findSolidsFolder(){
+      var solidsFound = false;
+      // find exisiting Solids Folder
+      for (var i = 1; i<=app.project.items.length; i++){
+
+        if (solidsFound){break;} // stop the loop after the first instance of a Solids folder is found
+
+        // if a Solids folder is found
+        if (app.project.item(i) instanceof FolderItem && app.project.item(i).name == "Solids"){
+          solidsFound = true;
+          var _sFolder = app.project.item(i); // make the first found Solids folder the destination for all of the Solids
+        }
+      }
+
+      if (!solidsFound){
+        var _sFolder = app.project.items.addFolder("Solids"); // make a Solids folder; set it to be the destination for all of the Solids
+      }
+
+      return _sFolder;
+    }
   }
 
   /////////////////////// sm_everyOtherLayer
