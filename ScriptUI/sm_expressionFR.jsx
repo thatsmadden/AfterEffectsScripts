@@ -1,4 +1,4 @@
-// sm_expressionFR v1.0
+// sm_expressionFR v1.2
 // Window for doing a simple Find and Replace in expressions.
 {
   function expressionFR(_found, _replaced, mode){
@@ -28,11 +28,11 @@
 
         res = "group{orientation:'row', alignment:['fill', 'fill'], alignChildren:['fill', 'fill'], spacing:2,\
           textGroup: Group{orientation:'column',preferredSize:[200,25],spacing:2,\
-            findText: EditText{text: 'findText', alignment:['fill', 'fill']},\
-            replaceText: EditText{text: 'replaceText', alignment:['fill', 'fill']},\
+            findText: EditText{text: 'findText', alignment:['fill', 'fill'], properties:{multiline:true}},\
+            replaceText: EditText{text: 'replaceText', alignment:['fill', 'fill'], properties:{multiline:true}},\
           },\
-          doButton: Button{text:'*', size:[20,20]},\
-          qButton: Button{text:'?', size:[20,20]},\
+          doButton: Button{text:'*',alignment:['right', 'fill'], maximumSize:[30,600]},\
+          qButton: Button{text:'?',alignment:['right', 'fill'], maximumSize:[30,600]},\
           }\
         }"
 
