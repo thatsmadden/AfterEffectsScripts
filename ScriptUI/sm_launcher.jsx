@@ -1,4 +1,4 @@
-// sm_launcher v1.5
+// sm_launcher v1.6
 
 
 {
@@ -184,16 +184,18 @@
       var tempFolder = app.project.items.addFolder("sm_destroyFolderTarget");
       tempFolder.parentFolder = containingFolder;
       var sFolder = dfs_findSolidsFolder();
+
       dfs_emptyContents(topFolder);
+      var nameHolder = topFolder.name;
+      topFolder.remove();
+      tempFolder.name = nameHolder;
+
+      app.endUndoGroup();
     } else {
       alert("Select a folder and try again");
     }
 
-    var nameHolder = topFolder.name;
-    topFolder.remove();
-    tempFolder.name = nameHolder;
 
-    app.endUndoGroup();
 
     function dfs_emptyContents(_curItem){
       if (_curItem instanceof FolderItem){
@@ -201,7 +203,7 @@
           _curItem.parentFolder = app.project.rootFolder;
         } else {
           for (var j=_curItem.items.length; j>=1;j--){
-            dfs_emptyContents(_curItem.item(j), _sFolder);
+            dfs_emptyContents(_curItem.item(j));
           }
         }
 
@@ -377,11 +379,14 @@
   }
 
   /////////////////////// sm_isolateProperties
-  function sm_isolateProperties(){
+  function sm_isolateProperties(_mode){
     var comp = app.project.activeItem;
+    var sL = comp.selectedLayers;
     var props = comp.selectedProperties;
     var deepestProp = null;
-    var curPath = "";
+    var pathsToSelect = new Array();
+
+
 
     // get deepest property
     for (var i = 0; i < props.length; i++){
@@ -393,37 +398,77 @@
           deepestProp = curProp;
         }
       }
-    }
 
-    //build property path
-    for (var j = 0; j < deepestProp.propertyDepth; j++){
-      if (j == 0) {
-        curPath = ".property(\"" + deepestProp.name + "\")";
-      } else {
-        curPath = ".property(\"" + deepestProp.propertyGroup(j).name + "\")" + curPath;
-      }
-    }
-
-    //loop through layers and select the properties
-    for (var k = 1; k <= comp.layers.length; k++){
-      var curLayer = comp.layer(k);
-      var curCheckPropStr = "comp.layer(" + k + ")" + curPath;
-
-      try {
-          eval(curCheckPropStr);
-      } catch (e) {
-          if (e instanceof SyntaxError) {
-              continue;
-          }
-      }
-
-      var curCheckProp = eval(curCheckPropStr);
-      if (curCheckProp !=null){
-        if (curLayer.selected == true){
-          curCheckProp.selected = true;
+      //build property path
+      for (var j = 0; j < deepestProp.propertyDepth; j++){
+        if (j == 0) {
+          curPath = ".property(\"" + deepestProp.name + "\")";
+        } else {
+          curPath = ".property(\"" + deepestProp.propertyGroup(j).name + "\")" + curPath;
         }
       }
+
+      pathsToSelect.push(curPath);
     }
+
+
+
+    // do the selecting
+    switch (_mode) {
+      case 0: // no key press -- select matching properties on selected layers
+        //loop through layers and select the properties
+        for (var k = 1; k <= comp.layers.length; k++){
+          if (comp.layer(k).selected == true){
+            isolatePropertiesSelect(k);
+          } // end layer selected conditional
+        } // end layer loop
+        break;
+
+      case 1: // shift held -- select matching properties on all layers
+        for (var k = 1; k <= comp.layers.length; k++){
+          isolatePropertiesSelect(k);
+        } // end layer loop
+        break;
+
+      case 2: // alt or option held -- select matching properties on layers with same label
+        for (var k = 1; k <= comp.layers.length; k++){
+          if (comp.layer(k) !== sL[0] && comp.layer(k).label == sL[0].label){
+            isolatePropertiesSelect(k);
+          } // end layer conditional
+        } // end layer loop
+        break;
+
+      case 3: // alt/option + shift held -- same as mode 0
+        for (var k = 1; k <= comp.layers.length; k++){
+          if (comp.layer(k).selected == true){
+            isolatePropertiesSelect(k);
+          } // end layer selected conditional
+        } // end layer loop
+        break;
+      default:
+        break;
+    }
+
+    function isolatePropertiesSelect(_k){
+      for (var m = 0; m < pathsToSelect.length; m++){
+
+        var curCheckPropStr = "comp.layer(" + _k + ")" + pathsToSelect[m];
+        try {
+            eval(curCheckPropStr);
+        } catch (e) {
+            if (e instanceof SyntaxError) {
+                continue;
+            }
+        }
+
+        var curCheckProp = eval(curCheckPropStr);
+        if (curCheckProp !=null){
+          curCheckProp.selected = true;
+        }
+      } // end pathsToSelect loop
+    } // end isolatePropertiesSelect function
+
+
   }
 
   /////////////////////////// sm_lookAt
@@ -508,6 +553,39 @@
   	app.endUndoGroup();
 
   }
+
+  // sm_parentSwap v1.0
+  // Given a layer selection, this script looks at each selected layer, finds its parent, find its grandparent, parents the current layer to the grandparent, and parents the current layer's parent to the current layer;
+  function sm_parentSwap(_mode){
+
+    var sL = app.project.activeItem.selectedLayers;
+    var pairs = new Array();
+    for (var i = 0; i< sL.length; i++){
+      if (sL[i].parent !== null){
+        if (sL[i].parent.parent !== null){
+          var curPair = new Object();
+          curPair.me = sL[i];
+          curPair.newParent = sL[i].parent.parent;
+          pairs.push(curPair);
+          if (_mode){
+            var nextPair = new Object();
+            nextPair.me = sL[i].parent;
+            nextPair.newParent = sL[i];
+            pairs.push(nextPair);
+          }
+        }
+      }
+    }
+    if (pairs.length !== 0){
+      app.beginUndoGroup("sm_parentSwap");
+      for (var j = 0; j < pairs.length; j++){
+        pairs[j].me.parent = pairs[j].newParent;
+      }
+      app.endUndoGroup();
+    }
+
+  }
+
   /////////////////////////// sm_quickBake
   function sm_quickBake(_mode){
     var _r = _mode == 2;
@@ -542,7 +620,7 @@
     app.endUndoGroup();
   }
 
-  /////////////////////////// sm_quickBake
+  /////////////////////////// sm_remapKeys
   function sm_remapKeys(){
     var comp = app.project.activeItem;
     var p = comp.selectedProperties;
@@ -560,28 +638,48 @@
 
   /////////////////////////// sm_quickShapeCombine
   function sm_quickShapeCombine(){
-    var sL = app.project.activeItem.selectedLayers;
+    var comp = app.project.activeItem;
+    var sL = comp.selectedLayers;
+    var indArr = new Array();
     app.beginUndoGroup("sm_quickShapeCombine");
+    comp.openInViewer();
     $.sleep(250);
     app.executeCommand(2004); // deselect
-    for (var i = 1; i<sL.length; i++){
-      if (sL[i].property("ADBE Root Vectors Group").property("ADBE Vector Group") !== null && sL[0].property("ADBE Root Vectors Group") !== null){
-        for (var j = 1; j<=sL[i].property("ADBE Root Vectors Group").numProperties; j++){
-          sL[i].property("ADBE Root Vectors Group").property(j).selected = true;
+
+    // push layer indices into array
+    for (var h = 0; h < sL.length; h++){
+      indArr.push(sL[h].index);
+    }
+
+    // sort the indices of the selected layers
+    var sInd = indArr.sort(compare);
+
+    for (var i = 1; i < sInd.length; i++){
+      var l = comp.layer(sInd[i]);
+      if (l.property("ADBE Root Vectors Group").property("ADBE Vector Group") !== null && l.property("ADBE Root Vectors Group") !== null){
+        for (var j = 1; j<=l.property("ADBE Root Vectors Group").numProperties; j++){
+          l.property("ADBE Root Vectors Group").property(j).selected = true;
           app.executeCommand(19); // copy
 
-          sL[0].property("ADBE Root Vectors Group").selected = true;
+          comp.layer(sInd[0]).property("ADBE Root Vectors Group").selected = true;
           app.executeCommand(20); // paste
           app.executeCommand(2004); // deselect
-        }
+        } // end Group cut and paste loop
+      } // end Shape Group check
+    } // end sorted index loop
 
+    for (var k = 0; k < sL.length; k++){
+      if (sL[k].index !== sInd[0]){
+        sL[k].remove();
       }
+    }
 
-    }
-    for (var i = 1; i < sL.length; i++){
-      sL[i].remove();
-    }
+
     app.endUndoGroup();
+
+    function compare(a, b) {
+      return a - b;
+    }
   }
 
   function sm_quickShapeBreakOut(){
@@ -1067,12 +1165,12 @@
 }
 {
 
-  function myScript(thisObj) {
-      function myScript_buildUI(thisObj) {
+  function launcherUI(thisObj) {
+      function launcherUI_buildUI(thisObj) {
         var myPanel = (thisObj instanceof Panel) ? thisObj : new Window("palette", "sm_launcher");
 
         res = "group{orientation:'row',alignment:['fill', 'center'],alignChildren:['fill', 'center'], spacing:2,\
-          dropper: DropDownList{properties:{items:['calculatedNull', 'circlePath', 'connector', 'convexHull', 'destroyFolderStructure','expressionSwitch','everyOtherLayer','face', 'fastShape', 'isolateProperties','lookAt', 'nullInPlace', 'parentChain','quickBake', 'quickShapeCombine', 'replaceWithSolid','restoreOrder','revealShapeColor - Fill','revealShapeColor - Stroke','selectImmediateChildren','selectUnparented','strayFileFinder','toComp', 'unevenWheel', 'versionUp']}, preferredSize:[200,25]},\
+          dropper: DropDownList{properties:{items:['calculatedNull', 'circlePath', 'connector', 'convexHull', 'destroyFolderStructure','expressionSwitch','everyOtherLayer','face', 'fastShape', 'isolateProperties','lookAt', 'nullInPlace', 'parentChain','parentSwap','quickBake', 'quickShapeCombine', 'replaceWithSolid','restoreOrder','revealShapeColor - Fill','revealShapeColor - Stroke','selectImmediateChildren','selectUnparented','strayFileFinder','toComp', 'unevenWheel', 'versionUp']}, preferredSize:[200,25]},\
           doButton: Button{text:'*',alignment:['right', 'center'],maximumSize:[25,25]},\
           qButton: Button{text:'?',alignment:['right', 'center'],maximumSize:[25,25]},\
           }\
@@ -1125,7 +1223,9 @@
             break;
 
             case "isolateProperties":
-            sm_isolateProperties();
+            var shiftPressed = ScriptUI.environment.keyboardState.shiftKey ? 1 : 0;
+            var altPressed = ScriptUI.environment.keyboardState.altKey ? 2 : 0;
+            sm_isolateProperties(shiftPressed + altPressed);
             break;
 
             case "lookAt":
@@ -1138,6 +1238,10 @@
 
             case "parentChain":
             sm_parentChain();
+            break;
+
+            case "parentSwap":
+            sm_parentSwap(true);
             break;
 
             case "quickBake":
@@ -1250,7 +1354,7 @@
             break;
 
             case "isolateProperties":
-            alert("Selects the selected property on multiple layers. Select a bunch of layers, command- or control-select a property, and run the script. Hold shift while running the script to select the property on all of the layers in the comp-- not just the selected layers. Hint: Press \'ss\' after the script runs to reveal the properties.");
+            alert("Selects the selected property on multiple layers.\nSelect a bunch of layers, command- or control-select a property, and run the script. Hold shift while running the script to select the property on all of the layers in the comp-- not just the selected layers. Hint: Press \'ss\' after the script runs to reveal the properties.");
             break;
 
             case "lookAt":
@@ -1263,6 +1367,10 @@
 
             case "parentChain":
             alert("Given a selection of layers, this script will parent each layer to the previously selected layer.");
+            break;
+
+            case "parentSwap":
+            alert("Given a selection of layers, this script will find each layer's parent and grandparent. It will then:\n1.) Parent the selected layer to the grandparent.\n2.) Parent the selected layer's existing parent to the selected layer.");
             break;
 
             case "replaceWithSolid":
@@ -1324,7 +1432,7 @@
             break;
 
             default:
-            alert("Make sure you select something from the dropdown.");
+            alert("Sorry. Haven't written this yet.");
           }
 
         }
@@ -1339,14 +1447,14 @@
       }
 
       // Build script panel
-      var myScriptPal = myScript_buildUI(thisObj);
+      var launcherUIPal = launcherUI_buildUI(thisObj);
 
-      if ((myScriptPal != null) && (myScriptPal instanceof Window)) {
-          myScriptPal.center();
-          myScriptPal.show();
+      if ((launcherUIPal != null) && (launcherUIPal instanceof Window)) {
+          launcherUIPal.center();
+          launcherUIPal.show();
       }
   }
 
   // Execute script
-  myScript(this);
+  launcherUI(this);
 }
