@@ -556,31 +556,37 @@
 
   /////////////////////////// sm_parentSwap
 
-  function sm_parentSwap(){
+  {
+    function sm_parentSwap(){
 
-    var sL = app.project.activeItem.selectedLayers;
-    var pairs = new Array();
-    for (var i = 0; i< sL.length; i++){
-      var curPair = new Object();
-      curPair.me = sL[i];
-      curPair.newParent = sL[i].parent.parent;
-      pairs.push(curPair);
-      var nextPair = new Object();
-      nextPair.me = sL[i].parent;
-      nextPair.newParent = sL[i];
-      pairs.push(nextPair);
-
-    }
-
-    if (pairs.length !== 0){
-      app.beginUndoGroup("sm_parentSwap");
-      for (var j = 0; j < pairs.length; j++){
-        pairs[j].me.parent = pairs[j].newParent;
+      var sL = app.project.activeItem.selectedLayers;
+      var pairs = new Array();
+      for (var i = 0; i< sL.length; i++){
+        if (sL[i].parent !== null){
+          var curPair = new Object();
+          curPair.me = sL[i];
+          curPair.newParent = sL[i].parent.parent;
+          pairs.push(curPair);
+          var nextPair = new Object();
+          nextPair.me = sL[i].parent;
+          nextPair.newParent = sL[i];
+          pairs.push(nextPair);
+        }
       }
-      app.endUndoGroup();
+
+      if (pairs.length !== 0){
+        app.beginUndoGroup("sm_parentSwap");
+        for (var j = 0; j < pairs.length; j++){
+          pairs[j].me.parent = pairs[j].newParent;
+        }
+        app.endUndoGroup();
+      }
+
     }
 
+    sm_parentSwap();
   }
+
 
   /////////////////////////// sm_quickBake
   function sm_quickBake(_mode){
