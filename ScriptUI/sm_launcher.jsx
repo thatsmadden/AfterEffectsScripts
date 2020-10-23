@@ -554,28 +554,24 @@
 
   }
 
-  // sm_parentSwap v1.0
-  // Given a layer selection, this script looks at each selected layer, finds its parent, find its grandparent, parents the current layer to the grandparent, and parents the current layer's parent to the current layer;
-  function sm_parentSwap(_mode){
+  /////////////////////////// sm_parentSwap
+
+  function sm_parentSwap(){
 
     var sL = app.project.activeItem.selectedLayers;
     var pairs = new Array();
     for (var i = 0; i< sL.length; i++){
-      if (sL[i].parent !== null){
-        if (sL[i].parent.parent !== null){
-          var curPair = new Object();
-          curPair.me = sL[i];
-          curPair.newParent = sL[i].parent.parent;
-          pairs.push(curPair);
-          if (_mode){
-            var nextPair = new Object();
-            nextPair.me = sL[i].parent;
-            nextPair.newParent = sL[i];
-            pairs.push(nextPair);
-          }
-        }
-      }
+      var curPair = new Object();
+      curPair.me = sL[i];
+      curPair.newParent = sL[i].parent.parent;
+      pairs.push(curPair);
+      var nextPair = new Object();
+      nextPair.me = sL[i].parent;
+      nextPair.newParent = sL[i];
+      pairs.push(nextPair);
+
     }
+
     if (pairs.length !== 0){
       app.beginUndoGroup("sm_parentSwap");
       for (var j = 0; j < pairs.length; j++){
@@ -1241,7 +1237,7 @@
             break;
 
             case "parentSwap":
-            sm_parentSwap(true);
+            sm_parentSwap();
             break;
 
             case "quickBake":
