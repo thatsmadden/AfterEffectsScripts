@@ -583,8 +583,6 @@
       }
 
     }
-
-    sm_parentSwap();
   }
 
 
