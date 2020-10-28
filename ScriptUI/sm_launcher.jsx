@@ -493,6 +493,39 @@
     app.endUndoGroup();
   }
 
+  /////////////////////////// sm_loopInAndOut
+  function sm_loopInAndOut(_mode){
+    var comp = app.project.activeItem;
+    var p = comp.selectedProperties;
+    var str = "continue";
+    app.beginUndoGroup("sm_loopInAndOut");
+    switch (_mode) {
+      case 0:
+        break;
+
+      case 1:
+        str = "cycle";
+        break;
+
+      case 2:
+        str = "pingpong";
+        break;
+
+      default:
+
+    }
+
+    for (var i=0; i<p.length; i++){
+      if (p[i] instanceof Property){
+        p[i].expression = "loopIn(\"" +  str + "\") + loopOut(\"" +  str + "\") - value"
+        p[i].expressionEnabled = true;
+      }
+
+    }
+
+    app.endUndoGroup();
+  }
+
   /////////////////////////// sm_nullInPlace
   function sm_nullInPlace(){
     var c = app.project.activeItem;
@@ -620,26 +653,11 @@
     app.endUndoGroup();
   }
 
-  /////////////////////////// sm_remapKeys
-  function sm_remapKeys(){
-    var comp = app.project.activeItem;
-    var p = comp.selectedProperties;
-    var i;
-
-    app.beginUndoGroup("sm_lookAt");
-
-    for (i=0; i<p.length; i++){
-      p[i].expression = "s = ;\nvalueAtTime(linear(s, 0, 100, key(1).time, key(numKeys).time));";
-      p[i].expressionEnabled = false;
-    }
-
-    app.endUndoGroup();
-  }
-
   /////////////////////////// sm_quickShapeCombine
   function sm_quickShapeCombine(){
     var comp = app.project.activeItem;
     var sL = comp.selectedLayers;
+    var nameHolder = sL[0].name;
     var indArr = new Array();
     app.beginUndoGroup("sm_quickShapeCombine");
     comp.openInViewer();
@@ -671,9 +689,10 @@
     for (var k = 0; k < sL.length; k++){
       if (sL[k].index !== sInd[0]){
         sL[k].remove();
+      } else {
+        sL[k].name = nameHolder;
       }
     }
-
 
     app.endUndoGroup();
 
@@ -703,11 +722,27 @@
           }
         }
       }
-
-
     }
     app.endUndoGroup();
   }
+
+  /////////////////////////// sm_remapKeys
+  function sm_remapKeys(){
+    var comp = app.project.activeItem;
+    var p = comp.selectedProperties;
+    var i;
+
+    app.beginUndoGroup("sm_lookAt");
+
+    for (i=0; i<p.length; i++){
+      p[i].expression = "s = ;\nvalueAtTime(linear(s, 0, 100, key(1).time, key(numKeys).time));";
+      p[i].expressionEnabled = false;
+    }
+
+    app.endUndoGroup();
+  }
+
+
 
   /////////////////////////// sm_replaceWithSolid
   function sm_replaceWithSolid(){
@@ -1170,7 +1205,7 @@
         var myPanel = (thisObj instanceof Panel) ? thisObj : new Window("palette", "sm_launcher");
 
         res = "group{orientation:'row',alignment:['fill', 'center'],alignChildren:['fill', 'center'], spacing:2,\
-          dropper: DropDownList{properties:{items:['calculatedNull', 'circlePath', 'connector', 'convexHull', 'destroyFolderStructure','expressionSwitch','everyOtherLayer','face', 'fastShape', 'isolateProperties','lookAt', 'nullInPlace', 'parentChain','parentSwap','quickBake', 'quickShapeCombine', 'replaceWithSolid','restoreOrder','revealShapeColor - Fill','revealShapeColor - Stroke','selectImmediateChildren','selectUnparented','strayFileFinder','toComp', 'unevenWheel', 'versionUp']}, preferredSize:[200,25]},\
+          dropper: DropDownList{properties:{items:['calculatedNull', 'circlePath', 'connector', 'convexHull', 'destroyFolderStructure','expressionSwitch','everyOtherLayer','face', 'fastShape', 'isolateProperties','lookAt','loopInAndOut', 'nullInPlace', 'parentChain','parentSwap','quickBake', 'quickShapeCombine', 'replaceWithSolid','restoreOrder','revealShapeColor - Fill','revealShapeColor - Stroke','selectImmediateChildren','selectUnparented','strayFileFinder','toComp', 'unevenWheel', 'versionUp']}, preferredSize:[200,25]},\
           doButton: Button{text:'*',alignment:['right', 'center'],maximumSize:[25,25]},\
           qButton: Button{text:'?',alignment:['right', 'center'],maximumSize:[25,25]},\
           }\
@@ -1230,6 +1265,12 @@
 
             case "lookAt":
             sm_lookAt();
+            break;
+
+            case "loopInAndOut":
+            var shiftPressed = ScriptUI.environment.keyboardState.shiftKey ? 1 : 0;
+            var altPressed = ScriptUI.environment.keyboardState.altKey ? 2 : 0;
+            sm_loopInAndOut(shiftPressed + altPressed);
             break;
 
             case "nullInPlace":
